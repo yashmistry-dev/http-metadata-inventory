@@ -22,6 +22,7 @@ services:
     environment:  
       MONGODB_URL: mongodb://admin:password@mongodb:27017/
       MONGODB_DB_NAME: metadata_db
+      HTTP_VERIFY_SSL: "false"
     depends_on:
       mongodb:
         condition: service_healthy

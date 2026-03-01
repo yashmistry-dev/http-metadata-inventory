@@ -40,7 +40,9 @@ The separation keeps things modular - API routes handle HTTP concerns, services 
 
 ## Configuration
 
-You can use a `.env` file to configure the application, but I've kept most settings in the `docker-compose.yml` file for simplicity..
+You can use a `.env` file to configure the application, but I've kept most settings in the `docker-compose.yml` file for simplicity.
+
+**Note on SSL Verification**: For this assessment, SSL certificate verification is disabled (`HTTP_VERIFY_SSL=false`) in the docker-compose setup. This allows the service to fetch metadata from HTTPS URLs without certificate validation issues during development. In a production environment, you would want to enable proper SSL verification and ensure CA certificates are properly configured.
 
 ## API Endpoints
 
