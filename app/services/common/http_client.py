@@ -15,7 +15,8 @@ class HTTPClient:
         async with httpx.AsyncClient(
             timeout=self.timeout,
             follow_redirects=True,
-            max_redirects=self.max_redirects
+            max_redirects=self.max_redirects,
+            verify=settings.http_verify_ssl
         ) as client:
             try:
                 response = await client.get(url)

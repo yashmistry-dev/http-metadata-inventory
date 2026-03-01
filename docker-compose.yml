@@ -1,5 +1,3 @@
-version: '3.8'
-
 services:
   mongodb:
     image: mongo:7.0
@@ -8,6 +6,12 @@ services:
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin
       MONGO_INITDB_ROOT_PASSWORD: password
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   api:
     build:
@@ -15,8 +19,22 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
-    environment:
+    environment:  
       MONGODB_URL: mongodb://admin:password@mongodb:27017/
       MONGODB_DB_NAME: metadata_db
     depends_on:
-      - mongodb
+      mongodb:
+        condition: service_healthy
+
+  tests:
+    build: .
+    command: pytest -v
+    environment:
+      MONGODB_URL: mongodb://admin:password@mongodb:27017/
+      MONGODB_DB_NAME: metadata_db
+      HTTP_VERIFY_SSL: "false"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    profiles:
+      - test

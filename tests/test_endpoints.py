@@ -2,7 +2,7 @@ import pytest
 from httpx import AsyncClient
 from app.main import app
 from app.database.connection import db
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @pytest.mark.asyncio
@@ -18,6 +18,7 @@ async def test_health_check(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_create_metadata_success(client: AsyncClient, test_db):
     """Test POST /metadata endpoint with valid URL."""
+    from pydantic import HttpUrl
     url = "https://example.com"
     
     response = await client.post(
@@ -27,7 +28,9 @@ async def test_create_metadata_success(client: AsyncClient, test_db):
     
     assert response.status_code == 201
     data = response.json()
-    assert data["url"] == url
+    # HttpUrl normalizes URLs (may add trailing slash), so compare normalized versions
+    expected_url = str(HttpUrl(url))
+    assert data["url"] == expected_url
     assert "headers" in data
     assert "cookies" in data
     assert "page_source" in data
@@ -49,18 +52,27 @@ async def test_create_metadata_invalid_url(client: AsyncClient):
 @pytest.mark.asyncio
 async def test_get_metadata_existing(client: AsyncClient, test_db, sample_metadata):
     """Test GET /metadata endpoint when metadata exists."""
-    # Insert test data
-    await test_db.metadata.insert_one({
+    # HttpUrl normalizes URLs (adds trailing slash), so we need to insert with normalized URL
+    from pydantic import HttpUrl
+    # Parse the URL to get the normalized version
+    normalized_url_obj = HttpUrl(sample_metadata["url"])
+    normalized_url = str(normalized_url_obj)
+    
+    # Insert test data with normalized URL
+    test_data = {
         **sample_metadata,
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
-    })
+        "url": normalized_url,
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
+    }
+    await test_db.metadata.insert_one(test_data)
     
     response = await client.get("/metadata", params={"url": sample_metadata["url"]})
     
     assert response.status_code == 200
     data = response.json()
-    assert data["url"] == sample_metadata["url"]
+    # HttpUrl normalizes, so compare normalized versions
+    assert data["url"] == normalized_url
     assert data["headers"] == sample_metadata["headers"]
 
 
@@ -74,4 +86,5 @@ async def test_get_metadata_not_found(client: AsyncClient, test_db):
     assert response.status_code == 202  # Accepted
     data = response.json()
     assert data["status"] == "pending"
-    assert data["url"] == url
+    # HttpUrl normalizes URLs (adds trailing slash), so compare normalized versions
+    assert data["url"].rstrip('/') == url.rstrip('/')

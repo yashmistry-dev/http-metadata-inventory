@@ -5,6 +5,8 @@ WORKDIR /app
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
     gcc \
+    ca-certificates \
+    && update-ca-certificates \
     && rm -rf /var/lib/apt/lists/*
 
 # Copy requirements first for better caching
@@ -13,6 +15,10 @@ RUN pip install --no-cache-dir -r requirements.txt
 
 # Copy application code - preserve directory structure
 COPY app/ ./app/
+
+# Copy tests and pytest configuration
+COPY tests/ ./tests/
+COPY pytest.ini ./
 
 # Expose port
 EXPOSE 8000

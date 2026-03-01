@@ -32,6 +32,8 @@ async def health_check():
         if db.client:
             await db.client.admin.command('ping')
             return {"status": "healthy", "database": "connected"}
+        else:
+            return {"status": "unhealthy", "database": "disconnected"}
     except Exception:
         return {"status": "unhealthy", "database": "disconnected"}
 

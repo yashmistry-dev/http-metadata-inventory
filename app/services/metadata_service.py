@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Optional, Dict, Any
 
 from app.database.connection import get_database
@@ -19,8 +19,8 @@ class MetadataService:
             "headers": metadata["headers"],
             "cookies": metadata["cookies"],
             "page_source": metadata["page_source"],
-            "created_at": datetime.utcnow(),
-            "updated_at": datetime.utcnow(),
+            "created_at": datetime.now(timezone.utc),
+            "updated_at": datetime.now(timezone.utc),
         }
         
         db = get_database()
@@ -53,7 +53,7 @@ class MetadataService:
                 "headers": metadata["headers"],
                 "cookies": metadata["cookies"],
                 "page_source": metadata["page_source"],
-                "updated_at": datetime.utcnow(),
+                "updated_at": datetime.now(timezone.utc),
             }
             
             db = get_database()
@@ -65,7 +65,7 @@ class MetadataService:
                     {"$set": document}
                 )
             else:
-                document["created_at"] = datetime.utcnow()
+                document["created_at"] = datetime.now(timezone.utc)
                 await db.metadata.insert_one(document)
         except Exception as e:
             logger.error(f"Error in background metadata collection for {url}: {e}", exc_info=True)

@@ -14,6 +14,11 @@ async def test_db():
     test_client = AsyncIOMotorClient(settings.mongodb_url)
     test_database = test_client[test_db_name]
     
+    # Create indexes (same as in connect_to_mongo)
+    await test_database.metadata.create_index("url", unique=True)
+    await test_database.metadata.create_index("created_at")
+    await test_database.metadata.create_index("updated_at")
+    
     # Store original database
     original_db = db.database
     

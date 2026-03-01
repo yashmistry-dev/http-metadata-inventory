@@ -8,6 +8,7 @@ class Settings(BaseSettings):
     api_port: int = 8000
     http_timeout: int = 30
     http_max_redirects: int = 5
+    http_verify_ssl: bool = True
     
     class Config:
         env_file = ".env"

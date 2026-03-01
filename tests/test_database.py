@@ -1,6 +1,6 @@
 import pytest
 from app.database.connection import get_database
-from datetime import datetime
+from datetime import datetime, timezone
 
 
 @pytest.mark.asyncio
@@ -23,8 +23,8 @@ async def test_database_unique_constraint(test_db):
         "headers": {},
         "cookies": [],
         "page_source": "",
-        "created_at": datetime.utcnow(),
-        "updated_at": datetime.utcnow()
+        "created_at": datetime.now(timezone.utc),
+        "updated_at": datetime.now(timezone.utc)
     }
     
     # Insert first document
