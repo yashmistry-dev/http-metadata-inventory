@@ -1,123 +1,71 @@
 # HTTP Metadata Inventory Service
 
-A FastAPI service that collects and stores HTTP metadata (headers, cookies, page source) from URLs.
+A service that collects and stores HTTP metadata (headers, cookies, and page source) from URLs. Built with FastAPI and MongoDB.
 
-## Features
+## Getting Started
 
-- POST endpoint to create metadata records
-- GET endpoint to retrieve metadata or trigger background collection
-- MongoDB storage for metadata
-- Background processing for async metadata collection
+The easiest way to run this project is using Docker Compose. It will start both the API server and MongoDB database for you.
 
-## Tech Stack
-
-- Python 3.11+
-- FastAPI
-- MongoDB
-- Docker Compose
-
-## Setup
-
-### Using Docker Compose
-
-```bash
+```terminal - 1
 docker-compose up
 ```
 
-This starts:
-- MongoDB on port 27019 (host) / 27017 (container)
-- API on port 8000
+Once it's running, you can access:
+- API Documentation: http://localhost:8000/docs
+- MongoDB: localhost:27019 (from your host machine)
 
-Access API docs at: http://localhost:8000/docs
+The API will be ready to accept requests once both containers are up and running.
 
-### Local Development
+## Running Tests
 
-1. Install dependencies:
-```bash
-pip install -r requirements.txt
+To run the test suite, open another terminal window and use:
+
+```terminal - 2
+docker-compose run tests
 ```
 
-2. Start MongoDB:
-```bash
-docker run -d -p 27017:27017 --name mongodb mongo:7.0
-```
-
-3. Set environment variables (optional):
-```bash
-export MONGODB_URL="mongodb://localhost:27017/"
-export MONGODB_DB_NAME="metadata_db"
-```
-
-4. Run the app:
-```bash
-uvicorn app.main:app --reload
-```
-
-## API Endpoints
-
-### POST /metadata
-
-Create metadata for a URL.
-
-**Request:**
-```json
-{
-  "url": "https://example.com"
-}
-```
-
-**Response (201):**
-```json
-{
-  "url": "https://example.com",
-  "headers": {...},
-  "cookies": [...],
-  "page_source": "...",
-  "created_at": "2024-01-01T12:00:00",
-  "updated_at": "2024-01-01T12:00:00"
-}
-```
-
-### GET /metadata?url=<url>
-
-Retrieve metadata. Returns 200 if found, 202 if collection is initiated in background.
-
-### GET /health
-
-Health check endpoint.
-
-## Testing
-
-Run tests:
-```bash
-# With Docker
-docker-compose exec api pytest
-
-# Locally
-pytest
-```
-
-## Configuration
-
-Environment variables:
-- `MONGODB_URL`: MongoDB connection string
-- `MONGODB_DB_NAME`: Database name (default: `metadata_db`)
-- `API_HOST`: API host (default: `0.0.0.0`)
-- `API_PORT`: API port (default: `8000`)
-- `HTTP_TIMEOUT`: HTTP timeout in seconds (default: `30`)
+This will spin up a separate container just for running tests, ensuring a clean test environment. The tests cover endpoints, database operations, and HTTP client functionality.
 
 ## Project Structure
 
-```
-app/
-├── main.py              # FastAPI app
-├── api/routes.py        # API endpoints
-├── models/schemas.py    # Pydantic models
-├── services/            # Business logic
-├── database/            # MongoDB connection
-└── config.py            # Configuration
-tests/
-├── test_endpoints.py    # Endpoint tests
-├── test_http_client.py  # HTTP client tests
-└── test_database.py    # Database tests
-```
+The codebase is organized into a few main areas:
+
+- `app/api/routes.py` - Contains all the API endpoints (POST /metadata, GET /metadata, health check)
+- `app/services/` - Business logic for metadata collection and storage
+- `app/database/` - MongoDB connection and database setup
+- `app/models/` - Pydantic models for request/response validation
+- `tests/` - Test suite with endpoint, database, and HTTP client tests
+
+The separation keeps things modular - API routes handle HTTP concerns, services contain the business logic, and the database layer manages persistence.
+
+## Configuration
+
+You can use a `.env` file to configure the application, but I've kept most settings in the `docker-compose.yml` file for simplicity..
+
+## API Endpoints
+
+**POST /metadata** - Creates a metadata record by fetching headers, cookies, and page source from a given URL.
+
+**GET /metadata?url=<url>** - Retrieves existing metadata if available (200), or returns 202 Accepted and triggers background collection if not found.
+
+**GET /health** - Health check endpoint to verify the service and database connection status.
+
+You can explore and test all endpoints using the interactive docs at `/docs` when the service is running.
+
+## Future Scalability Considerations
+
+Currently, the background metadata collection uses FastAPI's `BackgroundTasks`, which works well for small to medium workloads but runs in the same process as the API. For better scalability and reliability, here are some improvements that could be made:
+
+**Queue-Based Background Processing**: Instead of FastAPI's background tasks, we could integrate a proper message queue system like:
+- **Celery with Redis/RabbitMQ** - A robust Python task queue that supports distributed workers, retries, and monitoring
+- **RQ (Redis Queue)** - A simpler alternative that's easier to set up and works well for Python async tasks
+- **Apache Kafka** - For high-throughput scenarios where we need to process many URLs concurrently
+
+This would allow:
+- Scaling workers independently from the API
+- Better error handling and retry mechanisms
+- Task persistence (tasks survive API restarts)
+- Monitoring and visibility into background job status
+- Rate limiting and priority queues for URL fetching
+
+The current implementation is a good starting point, but moving to a queue-based system would be the next logical step as the service grows and needs to handle more concurrent requests or larger workloads.
